@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Delper: Perpetual Order Loop</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f4f6f7;--card:#fff;--ink:#14202b;--mute:#53636f;--line:#d5dde2;--acc:#0f766e;--accbg:#dff1ee;--warn:#9a3b12;--warnbg:#fbe9df}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#0f1820;--card:#17232d;--ink:#e8eef2;--mute:#9db0bd;--line:#2b3b47;--acc:#4fd1c0;--accbg:#12332f;--warn:#f0a77f;--warnbg:#3a2418}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#0f1820;--card:#17232d;--ink:#e8eef2;--mute:#9db0bd;--line:#2b3b47;--acc:#4fd1c0;--accbg:#12332f;--warn:#f0a77f;--warnbg:#3a2418}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*:before,*:after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:860px;margin:0 auto;padding:28px 20px 56px}
+h1,h2,h3{font-family:"Iowan Old Style",Georgia,"Times New Roman",serif;line-height:1.2;font-weight:700}
+h1{font-size:2rem;margin:0 0 10px}
+h2{font-size:1.3rem;margin:36px 0 12px}
+h3{font-size:1.35rem;margin:4px 0 8px}
+p{margin:0 0 12px;max-width:68ch}
+.lede{color:var(--mute);font-size:1.05rem}
+@media(min-width:600px){h1{font-size:2.4rem}main{padding-top:48px}}
+.loopwrap{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px}
+.loopwrap svg{width:100%;height:auto;display:block}
+.node{cursor:pointer;outline:none}
+.node circle{fill:var(--card);stroke:var(--acc);stroke-width:2.5;transition:fill .2s}
+.node text.num{fill:var(--acc);font-weight:700;font-size:20px;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.node:hover circle{fill:var(--accbg)}
+.node.active circle{fill:var(--acc);animation:glow 2.4s ease-in-out infinite}
+.node.active text.num{fill:var(--card)}
+.node:focus-visible circle{stroke-width:5}
+.lab{fill:var(--ink);font-size:15px;font-weight:600;dominant-baseline:middle}
+.ctr{fill:var(--mute);font-size:14px;text-anchor:middle}
+.ctr.big{fill:var(--ink);font-size:20px;font-weight:700;font-family:"Iowan Old Style",Georgia,serif}
+.arc{stroke:var(--acc);stroke-width:2;fill:none;opacity:.6}
+@keyframes glow{0%,100%{stroke-width:2.5}50%{stroke-width:8}}
+.detail{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;margin-top:16px}
+.k{font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--acc);font-weight:700}
+dl{display:grid;grid-template-columns:110px 1fr;gap:10px 14px;margin:14px 0 0}
+dt{color:var(--mute);font-weight:600}
+dd{margin:0}
+.loopnote{margin-top:12px;font-size:.92rem;color:var(--mute)}
+.bar{display:flex;height:36px;border-radius:6px;overflow:hidden;margin:12px 0 14px;border:1px solid var(--line)}
+.bar div{height:100%}
+.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px 18px;font-size:.93rem;margin:0}
+.legend div{display:flex;align-items:center}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:8px;flex:none}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.95rem;min-width:560px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mute);font-weight:600}
+.note{background:var(--accbg);border-left:4px solid var(--acc);padding:12px 14px;border-radius:0 8px 8px 0;margin:18px 0}
+.warn{background:var(--warnbg);border-left:4px solid var(--warn);padding:12px 14px;border-radius:0 8px 8px 0;margin:18px 0}
+.note p,.warn p{margin:0}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+<h1>The perpetual order loop</h1>
+<p class="lede">Delper runs as a closed loop, from lead generation to doorstep delivery and back again. Each completed, protected order brings the buyer back for the next enquiry. The loop runs continuously, advancing a step every few seconds and returning to step 1 after step 8. Select any step to jump to it.</p>
+
+<h2>The loop</h2>
+<div class="loopwrap">
+<svg id="loop" viewBox="0 0 860 700" role="group" aria-label="Eight-step order loop from lead generation to repeat purchase"></svg>
+</div>
+
+<div class="detail" id="detail" aria-live="polite"></div>
+
+<h2>Where the $300 order goes</h2>
+<p>Illustrative split of the average all-inclusive buyer price, using the plan’s assumptions for product cost, delivery and QC/RTB. Delper’s gross profit is the commission plus net lead generation, $72.67 or 24.22% of the price.</p>
+<div class="bar" role="img" aria-label="Order price split: product cost 30 percent, delivery 12.5 percent, lead generation 22.2 percent, QC and RTB 3 percent, commission 2 percent, seller gross profit 30.3 percent">
+<div style="width:30%;background:#8aa0ad" title="Product cost"></div>
+<div style="width:12.5%;background:#b7c6cf" title="Doorstep delivery"></div>
+<div style="width:22.22%;background:#0f766e" title="Lead generation"></div>
+<div style="width:3%;background:#c9d3d9" title="QC and RTB"></div>
+<div style="width:2%;background:#4fd1c0" title="Sales commission"></div>
+<div style="width:30.28%;background:#e0a46b" title="Seller gross profit"></div>
+</div>
+<div class="legend">
+<div><span class="sw" style="background:#8aa0ad"></span>Product cost: $90.00 (30%)</div>
+<div><span class="sw" style="background:#b7c6cf"></span>Doorstep delivery: $37.50 (12.5%)</div>
+<div><span class="sw" style="background:#0f766e"></span>Lead generation: $66.67 (22.2%)</div>
+<div><span class="sw" style="background:#c9d3d9"></span>QC and RTB: $9.00 (3%)</div>
+<div><span class="sw" style="background:#4fd1c0"></span>Sales commission: $6.00 (2%)</div>
+<div><span class="sw" style="background:#e0a46b"></span>Seller gross profit: $90.83 (30.3%)</div>
+</div>
+
+<h2>What to measure at each stage</h2>
+<div class="scroll"><table>
+<tr><th>Stage</th><th>KPI from the executive summary</th><th>Reference point</th></tr>
+<tr><td>Lead generation and bidding</td><td>Cost per order (pilot gate)</td><td>About $10,000 per order at 400 orders, against $72.67 gross profit per order</td></tr>
+<tr><td>Bidding</td><td>Seller acceptance of charges</td><td>Seller-paid charges are about 27.2% of price</td></tr>
+<tr><td>3PQC inspection</td><td>QC pass-rate integrity</td><td>Ratings must match the independent EY audit</td></tr>
+<tr><td>Doorstep delivery</td><td>Disputes per 1,000 orders</td><td>Baseline to set during the pilot</td></tr>
+<tr><td>Escrow release</td><td>Escrow acceptance and auto-release rate</td><td>Auto-release if no dispute is raised within 15 days</td></tr>
+<tr><td>Repeat and return</td><td>Repeat rate</td><td>Window still to define (for example 90 days)</td></tr>
+</table></div>
+
+<div class="warn"><p><b>Before the loop runs live:</b> Axis Bank (escrow), SGS (3PQC) and ONDC (buyer channel) are not yet signed. The 15-day acceptance window, QC cost and delivery cost are planning assumptions to replace with pilot data.</p></div>
+
+<div class="note"><p>The loop only turns when the escrow release happens. Revenue is earned only on completed sales, so any shortfall in acceptance, repeat orders or QC pass-rate integrity slows every later step.</p></div>
+</main>
+
+<script>
+const steps = [
+ {t:"Lead generation", s:"Lead generation", who:"Buyers and sellers",
+  what:"Buyers browse free static seller catalogues. Their enquiries to Delper are the leads sellers pay for. Seller events across 19 revenue streams add reach, and sellers bear those event costs.",
+  money:"Lead generation cost is deducted from the seller’s sale proceeds only when escrow releases.",
+  kpi:"Cost per order (pilot gate)"},
+ {t:"Enquiry and live bidding", s:"Live bidding", who:"Buyer, vetted sellers, Delper RTB",
+  what:"The buyer posts a product enquiry, and only pre-vetted factories can bid live. Bids are ranked by verified 3PQC pass rate and inventory data, not ad spend.",
+  money:"Free to buyers. Sellers prepay RTB at actual cost, and the charge is non-refundable.",
+  kpi:"Seller acceptance of charges"},
+ {t:"Choose and pay into escrow", s:"Pay into escrow", who:"Buyer and escrow bank (Axis Bank, in progress)",
+  what:"The buyer selects a bid and pays the all-inclusive price into escrow. Taxes and FX conversion are charged separately at checkout.",
+  money:"The average buyer price is $300 per order. Funds are held in escrow and are not paid to the seller yet.",
+  kpi:"Measured through escrow acceptance (step 7)"},
+ {t:"Produce and prepare", s:"Produce", who:"Seller",
+  what:"The seller wins the order, then produces and prepares the goods for dispatch.",
+  money:"Product cost is assumed at 30% of the order price in the plan. Replace it with pilot actuals.",
+  kpi:"Orders per seller a year"},
+ {t:"3PQC inspection and sign-off", s:"3PQC inspection", who:"Independent QC agents (SGS or an alternate), audited by EY",
+  what:"Independent agents inspect high-risk and sampled orders and issue the sign-off code that clears goods for dispatch. Low-rated products stay listed with their rating shown. If a buyer still buys one, it ships with a written caveat.",
+  money:"The seller prepays QC at actual cost, and agent pay is not tied to pass rates. Low-rated products incur no further QC or RTB charges.",
+  kpi:"QC pass-rate integrity"},
+ {t:"Doorstep delivery", s:"Doorstep delivery", who:"Seller and delivery partner",
+  what:"After sign-off, the goods are delivered to the buyer’s doorstep. A low rating does not remove the buyer’s rights for non-delivery or damage.",
+  money:"Delivery is assumed at 12.5% of the order price ($37.50) in the plan.",
+  kpi:"Disputes per 1,000 orders"},
+ {t:"Satisfaction certificate and escrow release", s:"Escrow release", who:"Buyer, escrow bank, Delper",
+  what:"The buyer has 15 days after delivery to issue a satisfaction certificate. If no dispute is raised in that window, escrow releases automatically.",
+  money:"On release, Delper takes its 2% commission ($6.00) and the lead generation cost. The seller receives the balance.",
+  kpi:"Escrow acceptance and auto-release rate"},
+ {t:"Repeat and return", s:"Repeat and return", who:"Buyer, seller, Delper",
+  what:"Verified sellers and protected payments bring the buyer back. Each new enquiry restarts the loop at step 1. In India, Delper Retail’s QR-signup customers can feed repeat demand.",
+  money:"The lead generation deduction supports repeat sales. Repeat rate is the main pilot signal.",
+  kpi:"Repeat rate (window to define, for example 90 days)"}
+];
+
+const cx = 430, cy = 350, R = 230, LR = R + 46;
+const rad = d => d * Math.PI / 180;
+const pt = (deg, r) => [cx + r * Math.cos(rad(deg)), cy + r * Math.sin(rad(deg))];
+const nodeAngle = i => -90 + i * 45;
+
+let out = '<defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#0f766e"/></marker></defs>';
+out += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="var(--line)" stroke-width="1" />`;
+
+// Arrows between consecutive nodes, trimmed so they stop at each node's edge
+for (let i = 0; i < 8; i++) {
+  const a0 = nodeAngle(i) + 10, a1 = nodeAngle(i + 1) - 10;
+  const [x0, y0] = pt(a0, R), [x1, y1] = pt(a1, R);
+  out += `<path class="arc" marker-end="url(#ah)" d="M${x0.toFixed(1)} ${y0.toFixed(1)} A${R} ${R} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)}"/>`;
+}
+
+// Nodes and labels
+steps.forEach((st, i) => {
+  const a = nodeAngle(i);
+  const [x, y] = pt(a, R);
+  const c = Math.cos(rad(a));
+  const [lx, ly] = pt(a, LR);
+  const anchor = c > 0.3 ? "start" : c < -0.3 ? "end" : "middle";
+  out += `<g class="node" data-i="${i}" tabindex="0" role="button" aria-label="Step ${i + 1}: ${st.t}">
+    <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="30"/>
+    <text class="num" x="${x.toFixed(1)}" y="${y.toFixed(1)}">${i + 1}</text>
+  </g>`;
+  out += `<text class="lab" x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${anchor}">${st.s}</text>`;
+});
+
+// Travelling pulse that circles the loop endlessly
+const ringPath = `M${cx} ${cy - R} A${R} ${R} 0 1 1 ${cx} ${cy + R} A${R} ${R} 0 1 1 ${cx} ${cy - R}`;
+out += `<circle r="8" fill="var(--acc)" opacity=".9"><animateMotion dur="32s" repeatCount="indefinite" path="${ringPath}"/></circle>`;
+
+// Center
+out += `<text class="ctr" x="${cx}" y="${cy - 26}">Perpetual</text>
+<text class="ctr big" x="${cx}" y="${cy + 2}">Order loop</text>
+<text class="ctr" x="${cx}" y="${cy + 28}">$300 order: $72.67 Delper gross profit</text>
+<text class="ctr" x="${cx}" y="${cy + 48}">Each completed order feeds the next enquiry</text>`;
+
+const svg = document.getElementById("loop");
+svg.innerHTML = out;
+
+const detail = document.getElementById("detail");
+function show(i) {
+  const st = steps[i];
+  svg.querySelectorAll(".node").forEach(n => n.classList.toggle("active", +n.dataset.i === i));
+  const loopNote = i === 7 ? '<p class="loopnote">This step returns to step 1, so the loop repeats.</p>' : '';
+  detail.innerHTML = `
+    <div class="k">Step ${i + 1} of 8</div>
+    <h3>${st.t}</h3>
+    <p>${st.what}</p>
+    <dl>
+      <dt>Who</dt><dd>${st.who}</dd>
+      <dt>Money</dt><dd>${st.money}</dd>
+      <dt>Measure</dt><dd>${st.kpi}</dd>
+    </dl>${loopNote}`;
+}
+
+svg.querySelectorAll(".node").forEach(n => {
+  const go = () => select(+n.dataset.i);
+  n.addEventListener("click", go);
+  n.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+});
+
+let current = 0, timer = null;
+function tick(){ current = (current + 1) % steps.length; show(current); }
+function restart(){ clearInterval(timer); timer = setInterval(tick, 4000); }
+function select(i){ current = i; show(i); restart(); }
+select(0);
+</script>
+</body>
+</html>
